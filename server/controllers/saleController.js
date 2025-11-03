@@ -197,7 +197,26 @@ exports.getSaleById = async (req, res) => {
     }
 };
 
-// @desc    Get sales for the current day for all users
+// @desc    Delete a sale
+// @route   DELETE /api/sales/:id
+// @access  Private/Admin
+exports.deleteSale = async (req, res) => {
+    try {
+        const sale = await Sale.findById(req.params.id);
+        if (sale) {
+            // Note: This is a hard delete and does NOT return stock.
+            // Use 'retractSale' if you need to manage inventory.
+            await sale.deleteOne();
+            res.json({ message: 'Sale removed' });
+        } else {
+            res.status(404).json({ message: 'Sale not found' });
+        }
+    } catch (error) {
+        res.status(500).json({ message: `Server Error: ${error.message}` });
+    }
+};
+
+// @desc    Get sales for the current day (filtered by cashier)
 // @route   GET /api/sales/today
 // @access  Private
 exports.getTodaysSales = async (req, res) => {
@@ -208,13 +227,22 @@ exports.getTodaysSales = async (req, res) => {
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
 
-    const sales = await Sale.find({
+    // Build the query
+    const query = {
       createdAt: {
         $gte: today,
         $lt: tomorrow,
       },
       status: 'Completed',
-    }).sort({ createdAt: -1 })
+    };
+
+    // If the user is a Cashier, only show their sales
+    if (req.user.role === 'Cashier') {
+      query.cashierId = req.user._id;
+    }
+    // Admins will not have the cashierId filter, so they see all sales
+
+    const sales = await Sale.find(query).sort({ createdAt: -1 })
       .populate('cashierId', 'username')
       .populate('customerId', 'name');
 
@@ -224,29 +252,4 @@ exports.getTodaysSales = async (req, res) => {
   } catch (error) {
     res.status(500).json({ message: `Server Error: ${error.message}` });
   }
-};
-
-// @desc    Delete a sale
-// @route   DELETE /api/sales/:id
-// @access  Private/Admin
-exports.deleteSale = async (req, res) => {
-    try {
-        const sale = await Sale.findById(req.params.id);
-
-        if (!sale) {
-            return res.status(404).json({ message: 'Sale not found' });
-        }
-
-        // Only allow deletion if the sale is already retracted
-        if (sale.status !== 'Retracted') {
-            return res.status(400).json({ message: 'Sale must be retracted before it can be deleted' });
-        }
-
-        await sale.deleteOne();
-        res.json({ message: 'Sale deleted successfully' });
-
-    } catch (error) {
-        console.error(`Sale deletion error: ${error.message}`);
-        res.status(500).json({ message: `Server Error: ${error.message}` });
-    }
 };

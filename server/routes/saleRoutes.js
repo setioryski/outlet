@@ -22,7 +22,7 @@ router.get('/today', protect, getTodaysSales);
 
 router.route('/:id')
     .get(protect, isAdmin, getSaleById)
-    .delete(protect, isAdmin, deleteSale); // <-- ADDED DELETE METHOD
+    .delete(protect, isAdmin, deleteSale); // <-- This is likely your line 25
 
 router.route('/:id/retract').put(protect, isAdmin, retractSale);
 

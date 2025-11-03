@@ -34,12 +34,33 @@ const InvoiceModal = ({ sale, onClose }) => {
                     <script src="https://cdn.tailwindcss.com"></script>
                     <style>
                         @media print {
-                            body { -webkit-print-color-adjust: exact; }
+                            @page {
+                                margin: 0;
+                            }
+                            body {
+                                margin: 1.2cm;
+                                -webkit-print-color-adjust: exact;
+                                color-adjust: exact;
+                            }
+                            .print-container {
+                                width: 100%;
+                                max-width: 100%;
+                                border: none;
+                                box-shadow: none;
+                            }
+                        }
+                        .print-container {
+                            width: 100%;
+                            max-width: 800px; /* A reasonable width for an invoice */
+                            margin: auto;
+                            font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
                         }
                     </style>
                 </head>
                 <body>
-                    ${printContent}
+                    <div class="print-container p-4">
+                        ${printContent}
+                    </div>
                 </body>
             </html>
         `;
@@ -53,53 +74,60 @@ const InvoiceModal = ({ sale, onClose }) => {
     return (
         <div className="fixed inset-0 bg-gray-800 bg-opacity-75 flex items-center justify-center p-4 z-50">
             <div className="bg-white rounded-lg shadow-xl w-full max-w-xl flex flex-col">
+                {/* Printable Area */}
                 <div id="invoice-print-area" className="p-8">
                     {/* Header */}
-                    <div className="flex justify-between items-start pb-4 border-b">
+                    <div className="flex justify-between items-start pb-4 border-b border-gray-200">
                         <div>
-                            <h2 className="text-2xl font-bold text-gray-800">Invoice</h2>
-                            <p className="text-sm text-gray-500 break-all">ID: {sale._id}</p>
+                            <h2 className="text-3xl font-bold text-gray-800">{settings.companyName}</h2>
+                            <p className="text-sm text-gray-500">{settings.address}</p>
                         </div>
                         <div className="text-right">
-                            <h3 className="text-lg font-semibold text-sky-800">{settings.companyName}</h3>
-                            <p className="text-sm text-gray-500">{settings.address}</p>
+                            <h3 className="text-2xl font-semibold text-gray-700">INVOICE</h3>
+                            <p className="text-xs text-gray-500 break-all">ID: {sale._id}</p>
                         </div>
                     </div>
 
                     {/* Details */}
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-8 gap-y-4 my-6 text-sm">
-                        <div>
-                            <p className="text-gray-500">Date</p>
-                            <p className="font-medium text-gray-800">{new Date(sale.createdAt).toLocaleString('id-ID', { dateStyle: 'long', timeStyle: 'short' })}</p>
+                    <div className="grid grid-cols-3 gap-x-8 gap-y-4 my-6 text-sm">
+                        {/* Billed To */}
+                        <div className="col-span-1">
+                            <p className="text-gray-500 uppercase text-xs font-bold tracking-wider mb-1">Billed To</p>
+                            {sale.customerId ? (
+                                <>
+                                    <p className="font-medium text-gray-800">{sale.customerId.name}</p>
+                                    {sale.customerId.phone && <p className="text-gray-600">{sale.customerId.phone}</p>}
+                                    {sale.customerId.address && <p className="text-gray-600">{sale.customerId.address}</p>}
+                                </>
+                            ) : (
+                                <p className="font-medium text-gray-800">Walk-in Customer</p>
+                            )}
                         </div>
-                        <div>
-                            <p className="text-gray-500">Cashier</p>
-                            <p className="font-medium text-gray-800">{sale.cashierId.username}</p>
-                        </div>
-                        <div>
-                            <p className="text-gray-500">Payment Method</p>
-                            <p className="font-medium text-gray-800">{sale.paymentMethod}</p>
+                        
+                        {/* Invoice Details */}
+                        <div className="col-span-2 text-right">
+                             <div className="grid grid-cols-2">
+                                <span className="text-gray-500 font-medium">Date:</span>
+                                <span className="font-medium text-gray-800">{new Date(sale.createdAt).toLocaleString('id-ID', { dateStyle: 'long', timeStyle: 'short' })}</span>
+                                
+                                <span className="text-gray-500 font-medium">Cashier:</span>
+                                <span className="font-medium text-gray-800">{sale.cashierId.username}</span>
+                                
+                                <span className="text-gray-500 font-medium">Payment Method:</span>
+                                <span className="font-medium text-gray-800">{sale.paymentMethod}</span>
+                             </div>
                         </div>
                     </div>
                     
-                    {sale.customerId && (
-                        <div className="mb-6 p-4 bg-gray-50 rounded-lg">
-                            <p className="text-sm font-semibold text-gray-700">Billed To:</p>
-                            <p className="font-medium text-gray-900">{sale.customerId.name}</p>
-                            {sale.customerId.phone && <p className="text-sm text-gray-600">{sale.customerId.phone}</p>}
-                            {sale.customerId.address && <p className="text-sm text-gray-600">{sale.customerId.address}</p>}
-                        </div>
-                    )}
-
                     {/* Items Table */}
                     <div className="overflow-x-auto">
                         <table className="min-w-full text-sm">
-                            <thead className="bg-gray-100">
+                            <thead className="bg-gray-100 border-b border-gray-300">
                                 <tr>
-                                    <th className="px-4 py-2 text-left font-semibold text-gray-600 uppercase tracking-wider">Product</th>
-                                    <th className="px-4 py-2 text-center font-semibold text-gray-600 uppercase tracking-wider">Qty</th>
-                                    <th className="px-4 py-2 text-right font-semibold text-gray-600 uppercase tracking-wider">Price</th>
-                                    <th className="px-4 py-2 text-right font-semibold text-gray-600 uppercase tracking-wider">Subtotal</th>
+                                    <th className="px-4 py-3 text-left font-semibold text-gray-600 uppercase tracking-wider">Product</th>
+                                    <th className="px-4 py-3 text-center font-semibold text-gray-600 uppercase tracking-wider">Qty</th>
+                                    <th className="px-4 py-3 text-right font-semibold text-gray-600 uppercase tracking-wider">Unit Price</th>
+                                    <th className="px-4 py-3 text-right font-semibold text-gray-600 uppercase tracking-wider">Subtotal</th>
                                 </tr>
                             </thead>
                             <tbody className="bg-white divide-y divide-gray-200">
@@ -116,8 +144,8 @@ const InvoiceModal = ({ sale, onClose }) => {
                     </div>
 
                     {/* Footer */}
-                    <div className="flex justify-end mt-6 pt-4 border-t">
-                        <div className="w-full max-w-xs">
+                    <div className="flex justify-end mt-6 pt-4 border-t border-gray-200">
+                        <div className="w-full max-w-xs space-y-2">
                             <div className="flex justify-between items-center">
                                 <span className="font-semibold text-gray-600">Total</span>
                                 <span className="text-xl font-bold text-gray-900">Rp{sale.totalAmount.toLocaleString('id-ID')}</span>
@@ -125,12 +153,12 @@ const InvoiceModal = ({ sale, onClose }) => {
                         </div>
                     </div>
 
-                    <div className="text-center text-xs text-gray-500 mt-8">
+                    <div className="text-center text-xs text-gray-500 mt-12">
                         <p>Thank you for your purchase!</p>
                     </div>
                 </div>
 
-                {/* Actions */}
+                {/* Actions (Non-printable) */}
                 <div className="bg-gray-50 px-6 py-4 flex justify-end items-center gap-3 rounded-b-lg print:hidden">
                     <button onClick={onClose} className="px-4 py-2 bg-gray-200 text-gray-800 text-sm font-medium rounded-md hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500">
                         Close
