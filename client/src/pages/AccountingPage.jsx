@@ -1,3 +1,4 @@
+// setioryski/outlet/outlet-3cfbd4fa53e575bcae4fd49c3caa4637028d3653/client/src/pages/AccountingPage.jsx
 import React, { useState, useEffect, useCallback } from 'react';
 import api from '../services/api';
 import { useToast } from '../context/ToastContext';
@@ -230,6 +231,7 @@ const AccountingPage = () => {
                             <thead className="bg-gray-50">
                                 <tr>
                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cashier</th>
                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Items</th>
                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
                                 </tr>
@@ -238,7 +240,9 @@ const AccountingPage = () => {
                                 {filteredSales.map(sale => (
                                     <tr key={sale._id}>
                                         <td className="px-6 py-4 whitespace-nowrap">{new Date(sale.createdAt).toLocaleDateString()}</td>
-                                        <td className="px-6 py-4 whitespace-nowrap">{sale.items.map(i => i.name).join(', ')}</td>
+                                        <td className="px-6 py-4 whitespace-nowrap">{sale.cashierId?.username || 'N/A'}</td>
+                                        {/* --- MODIFIED THIS LINE --- */}
+                                        <td className="px-6 py-4 whitespace-nowrap">{sale.items.map(i => `${i.quantity}x ${i.name}`).join(', ')}</td>
                                         <td className="px-6 py-4 whitespace-nowrap text-green-600 font-semibold">Rp{sale.totalAmount.toLocaleString('id-ID')}</td>
                                     </tr>
                                 ))}
