@@ -171,13 +171,28 @@ exports.retractSale = async (req, res) => {
 // @access  Private/Admin
 exports.getSales = async (req, res) => {
   try {
-    // --- ADDED FILTER LOGIC ---
-    const { cashierId } = req.query;
+    // --- MODIFIED FILTER LOGIC ---
+    const { cashierId, startDate, endDate } = req.query;
     const filter = {};
     if (cashierId) {
         filter.cashierId = cashierId;
     }
-    // --- END OF ADDED LOGIC ---
+
+    // Add date range filtering
+    if (startDate || endDate) {
+        filter.createdAt = {};
+        if (startDate) {
+            const start = new Date(startDate);
+            start.setHours(0, 0, 0, 0); // Set to start of the day
+            filter.createdAt.$gte = start;
+        }
+        if (endDate) {
+            const end = new Date(endDate);
+            end.setHours(23, 59, 59, 999); // Set to end of the day
+            filter.createdAt.$lte = end;
+        }
+    }
+    // --- END OF MODIFIED LOGIC ---
 
     const sales = await Sale.find(filter).sort({ createdAt: -1 }) // Use filter object
         .populate('cashierId', 'username')

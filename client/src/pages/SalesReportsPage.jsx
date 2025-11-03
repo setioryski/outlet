@@ -7,6 +7,14 @@ import ConfirmationModal from '../components/ConfirmationModal';
 import { useToast } from '../context/ToastContext';
 
 const SalesReportsPage = () => {
+    // Helper function to format date to YYYY-MM-DD for input[type=date]
+    const getISODate = (date = new Date()) => {
+        // Adjust for timezone offset before converting to ISO string
+        const tzOffset = date.getTimezoneOffset() * 60000;
+        const localISOTime = (new Date(date.getTime() - tzOffset)).toISOString().split('T')[0];
+        return localISOTime;
+    };
+    
     const [sales, setSales] = useState([]);
     const [loading, setLoading] = useState(true);
     const [selectedSale, setSelectedSale] = useState(null);
@@ -23,16 +31,26 @@ const SalesReportsPage = () => {
     // --- ADD STATE FOR CASHIER FILTER ---
     const [cashiers, setCashiers] = useState([]);
     const [selectedCashier, setSelectedCashier] = useState('');
+    
+    // --- ADD STATE FOR DATE FILTER (default to today) ---
+    const [startDate, setStartDate] = useState(getISODate());
+    const [endDate, setEndDate] = useState(getISODate());
 
     const { showToast } = useToast();
 
     const fetchSales = useCallback(async () => {
         setLoading(true);
         try {
-            // --- MODIFY API CALL TO INCLUDE FILTER ---
+            // --- MODIFY API CALL TO INCLUDE FILTERS ---
             const params = {};
             if (selectedCashier) {
                 params.cashierId = selectedCashier;
+            }
+            if (startDate) {
+                params.startDate = startDate;
+            }
+            if (endDate) {
+                params.endDate = endDate;
             }
             const { data } = await api.get('/sales', { params });
             // --- END OF MODIFICATION ---
@@ -43,7 +61,7 @@ const SalesReportsPage = () => {
         } finally {
             setLoading(false);
         }
-    }, [showToast, selectedCashier]); // Add selectedCashier to dependency array
+    }, [showToast, selectedCashier, startDate, endDate]); // Add date states to dependency array
 
     // --- ADD FUNCTION TO FETCH CASHIERS ---
     const fetchCashiers = async () => {
@@ -147,27 +165,53 @@ const SalesReportsPage = () => {
     return (
         <>
             <div>
-                {/* --- ADD FILTER UI --- */}
+                {/* --- MODIFIED FILTER UI --- */}
                 <div className="flex flex-col sm:flex-row justify-between sm:items-center mb-4 gap-4">
                     <h1 className="text-2xl font-bold text-gray-800">Sales Reports</h1>
-                    <div className="flex items-center gap-2">
-                        <label htmlFor="cashierFilter" className="text-sm font-medium text-gray-700">Filter by Cashier:</label>
-                        <select
-                            id="cashierFilter"
-                            value={selectedCashier}
-                            onChange={(e) => setSelectedCashier(e.target.value)}
-                            className="p-2 border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
-                        >
-                            <option value="">All Cashiers</option>
-                            {cashiers.map(cashier => (
-                                <option key={cashier._id} value={cashier._id}>
-                                    {cashier.username} ({cashier.role})
-                                </option>
-                            ))}
-                        </select>
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
+                        {/* Cashier Filter */}
+                        <div className="flex items-center gap-2">
+                            <label htmlFor="cashierFilter" className="text-sm font-medium text-gray-700">Cashier:</label>
+                            <select
+                                id="cashierFilter"
+                                value={selectedCashier}
+                                onChange={(e) => setSelectedCashier(e.target.value)}
+                                className="p-2 border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
+                            >
+                                <option value="">All Cashiers</option>
+                                {cashiers.map(cashier => (
+                                    <option key={cashier._id} value={cashier._id}>
+                                        {cashier.username} ({cashier.role})
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+                        
+                        {/* Date Filters */}
+                        <div className="flex items-center gap-2">
+                            <label htmlFor="startDate" className="text-sm font-medium text-gray-700">From:</label>
+                            <input
+                                type="date"
+                                id="startDate"
+                                value={startDate}
+                                onChange={(e) => setStartDate(e.target.value)}
+                                className="p-2 border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
+                            />
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <label htmlFor="endDate" className="text-sm font-medium text-gray-700">To:</label>
+                            <input
+                                type="date"
+                                id="endDate"
+                                value={endDate}
+                                onChange={(e) => setEndDate(e.target.value)}
+                                className="p-2 border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
+                            />
+                        </div>
                     </div>
                 </div>
                 {/* --- END OF FILTER UI --- */}
+
 
                 <div className="bg-white p-6 rounded-lg shadow-md overflow-x-auto">
                     <table className="min-w-full divide-y divide-gray-200">
