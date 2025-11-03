@@ -1,3 +1,5 @@
+// setioryski/outlet/outlet-3cfbd4fa53e575bcae4fd49c3caa4637028d3653/client/src/pages/SalesReportsPage.jsx
+
 import React, { useState, useEffect, useCallback } from 'react';
 import api from '../services/api';
 import InvoiceModal from '../components/InvoiceModal';
@@ -18,12 +20,22 @@ const SalesReportsPage = () => {
     const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
     const [saleToDeleteId, setSaleToDeleteId] = useState(null);
 
+    // --- ADD STATE FOR CASHIER FILTER ---
+    const [cashiers, setCashiers] = useState([]);
+    const [selectedCashier, setSelectedCashier] = useState('');
+
     const { showToast } = useToast();
 
     const fetchSales = useCallback(async () => {
         setLoading(true);
         try {
-            const { data } = await api.get('/sales');
+            // --- MODIFY API CALL TO INCLUDE FILTER ---
+            const params = {};
+            if (selectedCashier) {
+                params.cashierId = selectedCashier;
+            }
+            const { data } = await api.get('/sales', { params });
+            // --- END OF MODIFICATION ---
             setSales(data);
         } catch (error) {
             console.error("Failed to fetch sales", error);
@@ -31,11 +43,28 @@ const SalesReportsPage = () => {
         } finally {
             setLoading(false);
         }
-    }, [showToast]);
+    }, [showToast, selectedCashier]); // Add selectedCashier to dependency array
+
+    // --- ADD FUNCTION TO FETCH CASHIERS ---
+    const fetchCashiers = async () => {
+        try {
+            const { data } = await api.get('/users');
+            // Filter for only Admin and Cashier roles to display in dropdown
+            setCashiers(data.filter(u => u.role === 'Admin' || u.role === 'Cashier'));
+        } catch (error) {
+            console.error("Failed to fetch cashiers", error);
+            showToast('Failed to load cashier list.', 'error');
+        }
+    };
 
     useEffect(() => {
         fetchSales();
     }, [fetchSales]);
+
+    // --- ADD USEEFFECT TO FETCH CASHIERS ON MOUNT ---
+    useEffect(() => {
+        fetchCashiers();
+    }, []); // Empty dependency array so it only runs once
 
     const handlePrintClick = async (saleId) => {
         try {
@@ -118,7 +147,28 @@ const SalesReportsPage = () => {
     return (
         <>
             <div>
-                <h1 className="text-2xl font-bold text-gray-800 mb-4">Sales Reports</h1>
+                {/* --- ADD FILTER UI --- */}
+                <div className="flex flex-col sm:flex-row justify-between sm:items-center mb-4 gap-4">
+                    <h1 className="text-2xl font-bold text-gray-800">Sales Reports</h1>
+                    <div className="flex items-center gap-2">
+                        <label htmlFor="cashierFilter" className="text-sm font-medium text-gray-700">Filter by Cashier:</label>
+                        <select
+                            id="cashierFilter"
+                            value={selectedCashier}
+                            onChange={(e) => setSelectedCashier(e.target.value)}
+                            className="p-2 border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
+                        >
+                            <option value="">All Cashiers</option>
+                            {cashiers.map(cashier => (
+                                <option key={cashier._id} value={cashier._id}>
+                                    {cashier.username} ({cashier.role})
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+                </div>
+                {/* --- END OF FILTER UI --- */}
+
                 <div className="bg-white p-6 rounded-lg shadow-md overflow-x-auto">
                     <table className="min-w-full divide-y divide-gray-200">
                         {/* ... (thead remains unchanged) ... */}

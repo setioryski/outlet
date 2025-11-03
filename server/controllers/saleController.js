@@ -1,3 +1,5 @@
+// setioryski/outlet/outlet-3cfbd4fa53e575bcae4fd49c3caa4637028d3653/server/controllers/saleController.js
+
 const mongoose = require('mongoose');
 const Sale = require('../models/Sale');
 const Product = require('../models/Product');
@@ -169,7 +171,15 @@ exports.retractSale = async (req, res) => {
 // @access  Private/Admin
 exports.getSales = async (req, res) => {
   try {
-    const sales = await Sale.find({}).sort({ createdAt: -1 })
+    // --- ADDED FILTER LOGIC ---
+    const { cashierId } = req.query;
+    const filter = {};
+    if (cashierId) {
+        filter.cashierId = cashierId;
+    }
+    // --- END OF ADDED LOGIC ---
+
+    const sales = await Sale.find(filter).sort({ createdAt: -1 }) // Use filter object
         .populate('cashierId', 'username')
         .populate('customerId', 'name');
     res.json(sales);
